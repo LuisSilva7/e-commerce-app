@@ -8,6 +8,8 @@ import org.silva.ecommerce.kafka.OrderConfirmation;
 import org.silva.ecommerce.kafka.OrderProducer;
 import org.silva.ecommerce.orderline.OrderLineRequest;
 import org.silva.ecommerce.orderline.OrderLineService;
+import org.silva.ecommerce.payment.PaymentClient;
+import org.silva.ecommerce.payment.PaymentRequest;
 import org.silva.ecommerce.product.ProductClient;
 import org.silva.ecommerce.product.PurchaseRequest;
 import org.springframework.stereotype.Service;
@@ -21,7 +23,7 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final OrderMapper orderMapper;
     private final CustomerClient customerClient;
-    //private final PaymentClient paymentClient;
+    private final PaymentClient paymentClient;
     private final ProductClient productClient;
     private final OrderLineService orderLineService;
     private final OrderProducer orderProducer;
@@ -45,7 +47,14 @@ public class OrderService {
             );
         }
 
-        // todo - start payment process
+        var paymentRequest = new PaymentRequest(
+                request.amount(),
+                request.paymentMethod(),
+                order.getId(),
+                order.getReference(),
+                customer
+        );
+        paymentClient.requestOrderPayment(paymentRequest);
 
         orderProducer.sendOrderConfirmation(
                 new OrderConfirmation(
